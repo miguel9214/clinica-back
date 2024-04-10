@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
@@ -13,31 +14,37 @@ class AuthController extends Controller
 
     public function __construct()
     {
-        $this->middleware('auth:api', ['except' => ['login','register']]);
+        $this->middleware('auth:api', ['except' => ['login', 'register']]);
     }
 
     public function register(Request $request)
     {
+        $request->validate([
+            'name' => ['required', 'string'],
+            'email' => ['required', 'email', 'unique:users'],
+            'password' => ['required', 'confirmed', 'min:8']
+        ]);
 
-         try {
-            $request->validate([
-                'name'=>['required','string'],
-                'email'=>['required','email','unique:users'],
-                'password'=>['required','confirmed','min:8']
-               ]);
-         } catch (ValidationException $e) {
-            response()->json(['error'=>$e->errors()]);
-         }
+        DB::beginTransaction();
 
-          $user = new User;
-          $user->name=$request->name;
-          $user->email=$request->email;
-          $user->password=bcrypt($request->password);
+        try {
+            $user = new User;
+            $user->name = $request->name;
+            $user->email = $request->email;
+            $user->password = bcrypt($request->password);
 
-          $user->save();
+            $user->save();
 
-          return response()->json(['message' => 'Successfully created user', 'data'=>$user]);
+            DB::commit();
+            return response()->json(['message' => 'Usuario created successfully']);
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            return response()->json(['message' => $th->getMessage()], 422);
+        }
 
+
+
+        return response()->json(['message' => 'Successfully created user', 'data' => $user]);
     }
 
 
@@ -76,7 +83,8 @@ class AuthController extends Controller
         return response()->json([
             'access_token' => $token,
             'token_type' => 'bearer',
-            'expires_in' => auth('api')->factory()->getTTL() * 60
+            'expires_in' => auth('api')->factory()->getTTL() * 60,
+            'user'=>auth('api')->user(),
         ]);
     }
 }
