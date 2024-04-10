@@ -36,7 +36,7 @@ class AuthController extends Controller
             $user->save();
 
             DB::commit();
-            return response()->json(['message' => 'Usuario created successfully']);
+            return response()->json(['message' => 'User created successfully']);
         } catch (\Throwable $th) {
             DB::rollBack();
             return response()->json(['message' => $th->getMessage()], 422);
