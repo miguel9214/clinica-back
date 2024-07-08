@@ -20,9 +20,8 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::group([
-
-    // 'middleware' => 'api',
-    'prefix' => 'auth'
+    'prefix' => 'auth',
+     'middleware' => ['auth:api','role:Super-Admin'],
 
 ], function ($router) {
     Route::post('register', [AuthController::class,'register']);
